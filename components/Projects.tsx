@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { MOCK_PROJECTS } from '../constants';
-import { ASSETS } from '../constants';
 
 
 interface ProjectsProps {
@@ -36,7 +35,7 @@ export const Projects: React.FC<ProjectsProps> = ({ onProjectClick }) => {
               {/* Image Container */}
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 mb-6">
                 <img
-                  src={`${ASSETS.PROJECTS_IMAGE_PREFIX}${project.image}`}
+                  src={project.image}
                   alt={project.title}
                   className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105 grayscale-[10%] group-hover:grayscale-0"
                 />

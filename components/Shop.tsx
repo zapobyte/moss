@@ -59,7 +59,7 @@ export const Shop: React.FC = () => {
             <div key={product.id} className="group cursor-pointer">
               <div className="relative aspect-[3/4] overflow-hidden bg-gray-50 mb-6">
                 <img
-                  src={`${ASSETS.PROJECTS_IMAGE_PREFIX}${product.image}`}
+                  src={product.image}
                   alt={product.name}
                   className="h-full w-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105 grayscale-[20%] group-hover:grayscale-0"
                 />

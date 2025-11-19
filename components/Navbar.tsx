@@ -9,6 +9,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -64,20 +65,52 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
             ))}
           </div>
 
-          {/* Mobile Menu Icon (Placeholder logic) */}
+          {/* Mobile Menu Icon */}
           <div className="md:hidden z-50">
              <button 
               className={`p-2 transition-colors
                 ${isTransparent ? 'text-white' : 'text-mos-dark'}
               `}
+              aria-label="Toggle navigation menu"
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((prev) => !prev)}
             >
               <div className="space-y-1.5">
-                <span className="block w-6 h-0.5 bg-current"></span>
-                <span className="block w-6 h-0.5 bg-current"></span>
+                <span
+                  className={`block w-6 h-0.5 bg-current transform transition-transform duration-300 ${
+                    isMenuOpen ? 'translate-y-1.5 rotate-45' : ''
+                  }`}
+                ></span>
+                <span
+                  className={`block w-6 h-0.5 bg-current transform transition-transform duration-300 ${
+                    isMenuOpen ? '-translate-y-1.5 -rotate-45' : ''
+                  }`}
+                ></span>
               </div>
             </button>
           </div>
         </div>
+        {/* Mobile Menu Panel */}
+        {isMenuOpen && (
+          <div className="md:hidden mt-4 pb-4">
+            <div className="flex flex-col space-y-2">
+              {NAVIGATION.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onNavigate(item.id as Page);
+                  }}
+                  className={`w-full text-left text-[11px] font-bold uppercase tracking-[0.2em] py-2
+                    ${isTransparent ? 'text-white/90' : 'text-mos-dark'}
+                  `}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

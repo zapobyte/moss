@@ -75,7 +75,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onNavig
         {/* Hero Image */}
         <div className="w-full h-[60vh] md:h-[80vh] bg-gray-100 mb-20 overflow-hidden">
            <img 
-            src={`${ASSETS.PROJECTS_IMAGE_PREFIX}${project.image}`} 
+            src={project.image} 
             alt={project.title} 
             className="w-full h-full object-cover"
           />
@@ -95,7 +95,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ projectId, onNavig
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-32">
             {project.gallery.map((img, idx) => (
               <div key={idx} className={`bg-gray-100 overflow-hidden ${idx === 0 ? 'md:col-span-2 aspect-[21/9]' : 'aspect-[4/5]'}`}>
-                <img src={`${ASSETS.PROJECTS_IMAGE_PREFIX}${img}`} alt="Gallery detail" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out" />
+                <img src={img} alt="Gallery detail" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out" />
               </div>
             ))}
           </div>

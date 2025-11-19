@@ -19,7 +19,7 @@ export const About: React.FC = () => {
           
           <div className="relative h-[500px] w-full my-12 overflow-hidden">
              <img 
-              src={`${ASSETS.PROJECTS_IMAGE_PREFIX}about.jpg`}
+              src={ASSETS.ABOUT_IMAGE}
               alt="Workshop" 
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-[2s]"
             />
