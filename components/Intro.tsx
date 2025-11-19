@@ -9,6 +9,11 @@ interface IntroProps {
   onNavigate: (page: Page) => void;
 }
 
+/**
+ * Single fog particle.
+ * Each particle is a large, very soft circle that drifts, breathes (alpha oscillation),
+ * and reacts to the mouse to create a volumetric fog illusion.
+ */
 class Particle {
   x: number;
   y: number;
@@ -23,30 +28,40 @@ class Particle {
   fadeInSpeed: number;
 
   constructor(w: number, h: number) {
+    // Start at a random position on the screen
     this.x = Math.random() * w;
     this.y = Math.random() * h;
-    // Increased drift for more visible movement
+    // Base drift velocity (subtle constant movement)
     this.vx = (Math.random() - 0.5) * 0.5; 
     this.vy = (Math.random() - 0.5) * 0.5;
+
+    // Particle radius – large values make wide, soft clouds
     this.size = Math.random() * 150 + 80; 
+
+    // Target opacity for this particle (how dense this cloud feels)
     this.baseAlpha = Math.random() * 0.12 + 0.03; 
-    this.alpha = 0; // Start invisible
+
+    // Current opacity (starts at 0 and fades in)
+    this.alpha = 0;
+
+    // Angle / spin are here if we want to rotate things in the future
     this.angle = Math.random() * Math.PI * 2;
     this.spin = (Math.random() - 0.5) * 0.002;
     
-    // Growth logic
+    // Growth logic: how far into the fade‑in this particle is (0 → 1)
     this.fadeInFactor = 0;
-    // Random speed so the fog creates unevenly/organically. 
-    // Slower speed = takes longer to build up.
+
+    // How fast this particular particle fades in.
+    // Slower = takes longer for full fog to appear (more organic).
     this.fadeInSpeed = Math.random() * 0.003 + 0.001; 
   }
 
   update(w: number, h: number, mouseX: number, mouseY: number, time: number) {
-    // 1. Basic Physics (Constant drift)
+    // 1. Basic Physics (constant drift)
     this.x += this.vx;
     this.y += this.vy;
 
-    // 2. "Alive" Turbulence 
+    // 2. "Alive" turbulence (fake noise using sin/cos to avoid stillness)
     const noiseScale = 0.002;
     const timeScale = 0.0005;
     const turbulenceX = Math.sin(this.y * noiseScale + time * timeScale) * 1.5;
@@ -55,42 +70,59 @@ class Particle {
     this.x += turbulenceX;
     this.y += turbulenceY;
 
-    // 3. Build-up Logic (Fade In)
+    // 3. Build-up logic (fade in the fog density over time)
     if (this.fadeInFactor < 1) {
         this.fadeInFactor += this.fadeInSpeed;
     }
 
-    // 4. Breathing (Size/Alpha oscillation) combined with Fade In
+    // 4. Breathing (alpha oscillation) combined with fade in
     const breath = Math.sin(time * 0.002 + this.x * 0.01);
-    // Apply fadeInFactor to the final calculation
+    // Apply fadeInFactor so particles do not pop in
     this.alpha = (this.baseAlpha + (breath * 0.03)) * Math.min(1, this.fadeInFactor);
     
-    // 5. Wrap around screen with buffer
+    // 5. Wrap around screen with a buffer so particles recycle instead of disappearing
     const buffer = this.size * 2;
     if (this.x < -buffer) this.x = w + buffer;
     if (this.x > w + buffer) this.x = -buffer;
     if (this.y < -buffer) this.y = h + buffer;
     if (this.y > h + buffer) this.y = -buffer;
 
-    // 6. Interaction: Fluid Repel from mouse
+    // 6. Interaction: "fluid" repel from mouse (hover effect)
+    // ─────────────────────────────────────────────────────────
+    // If you want the hover reaction to be more visible/stronger,
+    // tweak these values:
+    //
+    //  - `repelRange` → how far from the cursor the fog is affected.
+    //  - multiplier in `force * 5` → how hard particles are pushed away.
+    //  - `this.alpha = Math.max(0, this.alpha - 0.02)` → how much they fade locally.
+    //
+    // Increasing these will make the "hole" around the cursor larger and clearer.
     const dx = mouseX - this.x;
     const dy = mouseY - this.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const repelRange = 350;
+
+    // How far from the cursor the fog gets disturbed.
+    // Increase this for a larger cleared circle.
+    const repelRange = 400;
 
     if (dist < repelRange) {
-      const force = (repelRange - dist) / repelRange;
+      // Normalized 0–1 strength based on distance (1 = at cursor center)
+      const strength = (repelRange - dist) / repelRange;
+      const force = strength;
       const angle = Math.atan2(dy, dx);
       
       // Push away
-      this.x -= Math.cos(angle) * force * 5;
-      this.y -= Math.sin(angle) * force * 5;
+      // Increase multiplier (10) for stronger displacement.
+      this.x -= Math.cos(angle) * force * 10;
+      this.y -= Math.sin(angle) * force * 10;
       
-      // Fade out locally when disturbed
-      this.alpha = Math.max(0, this.alpha - 0.02);
+      // Fade out locally when disturbed (makes the cleared gap more visible).
+      // Multiply by `strength` so the center of the cursor is the clearest,
+      // and the edge of the circle is softer.
+      this.alpha = Math.max(0, this.alpha - 0.08 * strength);
     } 
   }
-
+  
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -110,6 +142,7 @@ export const Intro: React.FC<IntroProps> = ({ onNavigate }) => {
   // Intro Animation for content
   useEffect(() => {
     if (isLoaded && contentRef.current) {
+      // Staggered fade‑up animation for the intro text/buttons
       gsap.fromTo(contentRef.current.children, 
         { y: 30, opacity: 0 },
         { y: 0, opacity: 1, duration: 1.5, stagger: 0.2, ease: "power2.out", delay: 0.5 }
@@ -130,10 +163,13 @@ export const Intro: React.FC<IntroProps> = ({ onNavigate }) => {
     let animationFrameId: number;
     
     const particles: Particle[] = [];
+    // Total number of fog particles. Increase for denser fog (more expensive).
     const particleCount = 200; 
 
+    // Mouse position in viewport coordinates. Starts off‑screen (no interaction).
     const mouse = { x: -1000, y: -1000 };
 
+    // Create particles and fit canvas to viewport
     const init = () => {
       width = window.innerWidth;
       height = window.innerHeight;
@@ -148,6 +184,7 @@ export const Intro: React.FC<IntroProps> = ({ onNavigate }) => {
 
     const handleResize = () => init();
     const handleMouseMove = (e: MouseEvent) => {
+      // Track mouse so each particle can respond in its update step
       mouse.x = e.clientX;
       mouse.y = e.clientY;
     };
@@ -158,14 +195,16 @@ export const Intro: React.FC<IntroProps> = ({ onNavigate }) => {
     init(); 
 
     const render = (time: number) => {
+      // Clear entire canvas each frame
       ctx.clearRect(0, 0, width, height);
       
       // Base haze
-      // Also animate the base haze in
-      // However, Particle class handles the main visual bulk.
+      // Very soft constant veil behind particles.
+      // The Particle system provides the main volumetric look.
       ctx.fillStyle = 'rgba(230, 235, 233, 0.05)';
       ctx.fillRect(0,0, width, height);
 
+      // Update + draw each particle
       particles.forEach(p => {
         p.update(width, height, mouse.x, mouse.y, time);
         p.draw(ctx);
